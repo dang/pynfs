@@ -798,6 +798,17 @@ class Info(object):
                "%s__str__ = __repr__\n" % \
                (prefix, indent2, reprbody, indent2, self.id, prefix)
 
+    def typecmp(self, varlist, prefix=indent):
+        return "%sdef __eq__(self, other):\n" \
+                "%sif isinstance(other, self.__class__):\n" \
+                "%s%sreturn self.__dict__ == other.__dict__\n" \
+                "%selse:\n" \
+                "%s%sreturn False\n" \
+                "%sdef __ne__(self, other):\n" \
+                "%sreturn not self.__eq__(other)\n" % \
+                (prefix, indent2, indent2, indent, indent2, indent2, indent, prefix,
+                 indent2)
+
     def _array_pack(self, prefix, data='data'):
         info = globals()["%s_info" % self.type]
         if isinstance(self, info):
@@ -1053,10 +1064,11 @@ class struct_info(Info):
                  (comment, comment, self.id, xdrbody, comment)
         varlist = [l for l in self.body if l.type != 'void']
         init = self.typeinit(varlist)
+        cmp = self.typecmp(varlist)
         repr = self.typerepr(varlist)
         pass_attr = self.pass_through(varlist)
-        return "class %s:\n%s%s\n%s%s\n" % \
-               (self.id, xdrdef, init, pass_attr, repr)
+        return "class %s:\n%s%s\n%s\n%s%s\n" % \
+               (self.id, xdrdef, init, cmp, pass_attr, repr)
 
     def pass_through(self, varlist):
         def check(v):
