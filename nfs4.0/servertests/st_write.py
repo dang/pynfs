@@ -4,6 +4,7 @@ from .environment import check, compareTimes, makeBadID, makeBadIDganesha, makeS
 import struct
 import rpc.rpc as rpc
 import nfs_ops
+import time
 op = nfs_ops.NFS4ops()
 
 _text = 'write data' # len=10
@@ -426,24 +427,36 @@ def testLargeReadWrite(t, env):
     maxread, maxwrite = _get_iosize(t, c, c.homedir)
     # linux server really should be able to handle (maxread, maxwrite)
     # but can't:
-    size = min(maxread/4, maxwrite/4)
-    writedata = 'A'*size
+    size = min(maxread/2, maxwrite/2)
+    # writedata = 'A'*size
     attrs = {FATTR4_SIZE: size}
     fh, stateid = c.create_confirm(t.code, attrs=attrs,
                                     deny=OPEN4_SHARE_DENY_NONE)
     ops = c.use_obj(fh)
     ops += [op.read(stateid, 0, size)]
-    ops += [op.write(stateid, 0, UNSTABLE4, writedata)]
-    res = c.compound(ops)
+    # ops += [op.write(stateid, 0, UNSTABLE4, writedata)]
+    # res = c.compound(ops)
+    p = c.compound_pack(ops, '', 0)
+    un_p = c.nfs4unpacker
+    xid = c.send(NFSPROC4_COMPOUND, p.get_buffer())
+    print("Sleeping 5")
+    # time.sleep(5)
+    print("Sleep done %i", xid)
+    res = c.listen(xid)
+    print("Listen done")
+    un_p.reset(res)
+    res = un_p.unpack_COMPOUND4res()
+    un_p.done()
+
     check(res)
-    data = res.resarray[-2].switch.switch.data
-    if len(data) != len(writedata):
+    data = res.resarray[-1].switch.switch.data
+    if len(data) != size:
         t.fail("READ returned %d bytes, expected %d" %
                            (len(data), len(writedata)))
     if (data != '\0'*size):
         t.fail("READ returned unexpected data")
-    res = c.read_file(fh, 0, size)
-    _compare(t, res, writedata, True)
+    # res = c.read_file(fh, 0, size)
+    # _compare(t, res, writedata, True)
 
 def testMultipleReadWrites(t,env):
     """Compound with multiple writes, then compound with multiple reads

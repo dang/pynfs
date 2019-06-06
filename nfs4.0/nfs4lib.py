@@ -318,8 +318,8 @@ class NFS4Client(rpc.RPCClient):
         self.nfs4unpacker.reset(res)
         self.nfs4unpacker.done()
 
-    def compound(self, argarray, tag='', minorversion=0):
-        """Make COMPOUND procedure call"""
+    def compound_pack(self, argarray, tag='', minorversion=0):
+        """Pack up a COMPOUND for sending"""
         if type(argarray) is not list:
             raise "Need list for argarray"
 
@@ -334,9 +334,15 @@ class NFS4Client(rpc.RPCClient):
             print
             print(compoundargs)
         p = self.nfs4packer
-        un_p = self.nfs4unpacker
         p.reset()
         p.pack_COMPOUND4args(compoundargs)
+        return p
+
+    def compound(self, argarray, tag='', minorversion=0):
+        """Make COMPOUND procedure call"""
+        p = self.compound_pack(argarray, tag, minorversion)
+        un_p = self.nfs4unpacker
+
         res = self.call(NFSPROC4_COMPOUND, p.get_buffer())
         un_p.reset(res)
         res = un_p.unpack_COMPOUND4res()

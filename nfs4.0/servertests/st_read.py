@@ -36,6 +36,7 @@ def testSimpleRead(t, env):
     c = env.c1
     res = c.read_file(env.opts.usefile)
     check(res, msg="Reading file /%s" % '/'.join(env.opts.usefile))
+    print("Reading file /%s" % '/'.join(env.opts.usefile))
     _compare(t, res, env.filedata, True)
 
 def testStateidOnes(t, env):

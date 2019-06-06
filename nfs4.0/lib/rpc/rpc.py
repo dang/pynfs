@@ -352,7 +352,7 @@ class RPCClient(object):
         # If xid not on list, return error.
         # Listen until get reply with given xid.  Cache others received
         # on list.  Return error if get one not on list.
-        if self.debug: print("listen", xid)
+        print("listen", xid)
         list = self.get_outstanding_xids()
         if xid not in list:
             raise
@@ -380,6 +380,7 @@ class RPCClient(object):
             p.reset(reply)
             rhead = p.unpack_rpc_msg()
             rxid = rhead.xid
+            print("Got xid %i" %rxid)
             if rxid not in list:
                 raise RPCError("Got reply xid %i, expected %i" % \
                                (rxid, xid))
